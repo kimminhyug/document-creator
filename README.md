@@ -9,6 +9,7 @@
 - [문서팀 역할과 12단계 흐름](docs/policies/DOCUMENT_TEAM.md)
 - [본문 작성 규칙](docs/policies/WRITING_STANDARD.md)
 - [캡처 설정](docs/guides/CAPTURE_SETTINGS.md)
+- [조사 실행 명령](docs/guides/RESEARCH_COMMANDS.md)
 - [AI 실행 연결](docs/guides/AI_EXECUTION.md)
 - [검증 결과와 제한](docs/development/STATUS.md)
 
@@ -46,6 +47,19 @@ Python 3.12 환경에서 requirements.txt의 라이브러리를 사용합니다.
 ## 기본 실행
 
 아래 python은 설정된 Python 3.12 실행 파일입니다.
+
+조사 시작은 아래 공통 명령을 사용합니다. 제품·환경 설정에서 대상과 담당자를 읽으며 기본값은 실행 계획 확인입니다. `run`이 출력한 작업 폴더를 `status`와 `resume`에 전달합니다.
+
+~~~text
+python document.py research plan --product demo --environment local
+python document.py research run --product demo --environment local
+python document.py research status --run 작업폴더
+python document.py research resume --run 작업폴더 --execute
+~~~
+
+실제 AI 실행은 설정된 실행기가 필요합니다. 캡처 수집은 `--execute --collect`, 읽기 전용 DB 조회까지 포함하려면 `--with-db`를 추가합니다. 조사 명령은 다음 단계나 집필 단계를 자동 승인하지 않습니다. 자세한 사용법은 [조사 실행 명령](docs/guides/RESEARCH_COMMANDS.md)을 따릅니다.
+
+기존 개별 명령도 사용할 수 있습니다.
 
 ~~~text
 python flow.py init --product demo

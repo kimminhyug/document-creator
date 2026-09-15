@@ -8,3 +8,4 @@
 - [AI 실행 인터페이스](AI_EXECUTION.md)
 - [캡처 설정 가이드](CAPTURE_SETTINGS.md)
 - [제품별 Playwright 캡처와 PostgreSQL 조회](COLLECTION.md)
+- [조사 실행 명령](RESEARCH_COMMANDS.md)

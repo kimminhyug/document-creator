@@ -12,3 +12,4 @@
 - [test_markdown_content.py](test_markdown_content.py)
 - [test_outputs.py](test_outputs.py)
 - [test_pdf_navigation.py](test_pdf_navigation.py)
+- [test_research_cli.py](test_research_cli.py)

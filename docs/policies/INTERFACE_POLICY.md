@@ -78,6 +78,8 @@ PDF 테마의 `layout.keep_title_words`는 표지 제목의 단어 단위 줄바
 
 ## 단계·출력 계약
 
+조사의 공통 진입점은 `document.py research`다. `plan`은 설정을 읽어 조사 대상·역할·산출물을 확인하고, `run`은 새 작업을 생성하며, `status`와 `resume`은 저장된 제품·환경에 연결된 작업을 조회·재개한다. 실제 AI 실행과 근거 수집은 명시적 옵션으로 구분한다. 실행 성공과 검토 승인을 구분하며 조사 명령이 `flow.advance`를 자동 호출하지 않는다. 상세 예시는 [조사 실행 명령](../guides/RESEARCH_COMMANDS.md)을 따른다.
+
 12단계는 workflows/senior-document-team.json을 따른다. 문서별 document_teams 또는 파일별 agent로 담당을 나눈다. 같은 작성자가 독립 리뷰를 맡을 수 없다. 에이전트 ID는 감사 식별자이며 인증 시스템은 아니다.
 
 통과한 MD·관리 JSON·근거 또는 검수한 출력이 변경되면 후속 단계 진행을 막는다. lead가 사유와 복귀 단계를 지정해 rework한 뒤 다시 검증한다. 실제 출력 없는 전달, 검수 단계의 해당 없음 처리는 허용하지 않는다.
