@@ -9,4 +9,6 @@
 - [test_collection_flow.py](test_collection_flow.py)
 - [test_creator.py](test_creator.py)
 - [test_interface.py](test_interface.py)
+- [test_markdown_content.py](test_markdown_content.py)
 - [test_outputs.py](test_outputs.py)
+- [test_pdf_navigation.py](test_pdf_navigation.py)

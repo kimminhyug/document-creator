@@ -1,5 +1,5 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "metadata_fields": ["id", "kind", "company", "product", "status", "sources", "author"],
   "kinds": {
     "scope": {"prefix": "scope/", "headings": ["목적", "범위", "완료 조건"]},
@@ -12,7 +12,7 @@
     "reconcile": {"prefix": "research/reconcile/", "headings": ["근거 비교", "불일치", "해결 또는 보류"]},
     "outline": {"prefix": "outlines/", "headings": ["독자", "목차", "분담"]},
     "document_index": {"prefix": "documents/", "headings": ["문서 목적", "목차"]},
-    "document_section": {"prefix": "documents/", "headings": ["내용", "관련 참조"]},
+    "document_section": {"prefix": "documents/", "headings": ["내용"]},
     "fact_check": {"prefix": "reviews/facts/", "headings": ["검증 범위", "확인한 근거", "판정", "수정 요청"]},
     "review": {"prefix": "reviews/independent/", "headings": ["검토 범위", "판정", "문제와 재현", "다음 조치"]},
     "style_check": {"prefix": "reviews/style/", "headings": ["적용 표준", "판정", "서식 검증", "미검증 사항"]},

@@ -5,11 +5,19 @@ from html import escape
 from pathlib import Path
 import re
 from urllib.parse import urlsplit
+from inline_links import safe_url_markup, url_parts
 
 
 def style_token(theme, role):
     sizes = {'title': theme['title_pt'], 'heading_1': theme['heading_pt'], 'heading_2': theme['body_pt']+2, 'heading_3': theme['body_pt']+1, 'heading_4': theme['body_pt'], 'body': theme['body_pt'], 'table_header': theme['table_pt'], 'table_body': theme['table_pt'], 'header': 9, 'footer': 9}
-    return {'font_family': theme['font_family'], 'size_pt': sizes[role], 'bold': role.startswith('heading_') or role in ('title', 'table_header'), **theme.get('styles', {}).get(role, {})}
+    before = {'heading_1': 20, 'heading_2': 16, 'heading_3': 14, 'heading_4': 12}.get(role, 0)
+    after = 10 if role.startswith('heading_') else {'title': 14, 'body': 9}.get(role, 0)
+    return {'font_family': theme['font_family'], 'size_pt': sizes[role], 'bold': role.startswith('heading_') or role in ('title', 'table_header'), 'space_before_pt': before, 'space_after_pt': after, **theme.get('styles', {}).get(role, {})}
+
+
+def version_text(content, theme):
+    label = theme.get('cover', {}).get('version_label', '버전')
+    return (label + ' ' + content['version']).strip()
 
 
 def public_references(content):
@@ -29,19 +37,20 @@ def public_references(content):
 def render_html(path, content, project, theme):
     from creator import section_blocks, interpolate
     def e(value): return escape(str(value), quote=True)
+    def prose(value): return safe_url_markup(str(value), content.get('web_links', []))
     def fmt(value): return interpolate(value, content, project)
     rules = []
     for role, selector in [('title', '.title'), ('heading_1','h1'), ('heading_2','h2'), ('heading_3','h3'), ('heading_4','h4'), ('body','body'), ('table_header','th'), ('table_body','td'), ('header','header'), ('footer','footer')]:
         token = style_token(theme, role)
         # Quote a validated family name; no raw CSS from product content.
         family = token['font_family'].replace('\\','\\\\').replace('"','\\"')
-        rules.append(f'{selector}{{font-family:"{family}",sans-serif;font-size:{token["size_pt"]}pt;font-weight:{700 if token["bold"] else 400}}}')
+        rules.append(f'{selector}{{font-family:"{family}",sans-serif;font-size:{token["size_pt"]}pt;font-weight:{700 if token["bold"] else 400};margin-top:{token["space_before_pt"]}pt;margin-bottom:{token["space_after_pt"]}pt}}')
     c = theme['colors']; table = theme.get('table', {})
     css = '\n'.join(rules) + f'\nbody{{margin:0;background:{c["background"]};color:{c["text"]};line-height:{theme["line_spacing"]}}}main{{max-width:980px;margin:auto;padding:40px}}header,footer{{color:{c["muted"]};padding:18px 0}}table{{border-collapse:collapse;width:100%;margin:16px 0}}th,td{{text-align:left;vertical-align:top;border-bottom:{table.get("border_pt",.35)}pt solid {c["border"]};padding:{table.get("padding_y_pt",7)}pt {table.get("padding_x_pt",7)}pt;overflow-wrap:anywhere}}th{{background:{c["table_fill"]};color:{c["table_text"]}}}img{{max-width:100%;height:auto}}pre{{white-space:pre-wrap;overflow-wrap:anywhere}}p{{white-space:pre-wrap}}section{{margin-bottom:32px}}a{{color:{c["accent"]}}}@media print{{main{{padding:0}}.front{{break-after:page}}thead{{display:table-header-group}}}}'
     html = ['<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">', '<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; img-src data:; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;">', '<title>'+e(content['title'])+'</title><style>'+css+'</style></head><body><main>']
     html.append('<header>'+e(fmt(theme['header']['left']))+' · '+e(fmt(theme['header']['right']))+'</header>')
     if theme.get('cover',{}).get('enabled',True):
-        html.append('<section class="front"><p>'+e(project['organization'])+'</p><h1 class="title">'+e(fmt(theme.get('cover',{}).get('title','{title}')) )+'</h1><p>'+e(content['summary'])+'</p><p>'+e(content['version'])+' · '+e(project['classification'])+'</p>'+('<p>가상 예제 데이터로 작성된 문서입니다.</p>' if content.get('example') else '')+'</section>')
+        html.append('<section class="front"><p>'+e(project['organization'])+'</p><h1 class="title">'+e(fmt(theme.get('cover',{}).get('title','{title}')) )+'</h1><p>'+e(content['summary'])+'</p><p>'+e(version_text(content, theme))+' · '+e(project['classification'])+'</p>'+('<p>가상 예제 데이터로 작성된 문서입니다.</p>' if content.get('example') else '')+'</section>')
     if theme.get('copyright',{}).get('enabled',False):
         html.append('<section class="front"><h1>'+e(fmt(theme['copyright'].get('title','저작권')))+'</h1><p>'+e(fmt(theme['copyright'].get('text','')))+'</p></section>')
     if theme.get('contents',{}).get('enabled',True):
@@ -53,8 +62,8 @@ def render_html(path, content, project, theme):
         for b in section_blocks(section):
             k=b['type']
             if k=='table':
-                html.append('<table><thead><tr>'+''.join('<th scope="col">'+e(h)+'</th>' for h in b['headers'])+'</tr></thead><tbody>')
-                html.extend('<tr>'+''.join('<td>'+e(v)+'</td>' for v in row)+'</tr>' for row in b['rows'])
+                html.append('<table><thead><tr>'+''.join('<th scope="col">'+prose(h)+'</th>' for h in b['headers'])+'</tr></thead><tbody>')
+                html.extend('<tr>'+''.join('<td>'+prose(v)+'</td>' for v in row)+'</tr>' for row in b['rows'])
                 html.append('</tbody></table>')
             elif k=='image':
                 p=Path(b['path']); mime='image/png' if p.suffix.lower()=='.png' else 'image/jpeg'
@@ -63,8 +72,8 @@ def render_html(path, content, project, theme):
             elif k=='code': html.append('<pre><code>'+e(b['text'])+'</code></pre>')
             elif k=='note':
                 note=theme['notes'][b['role']]
-                html.append('<aside style="padding:12px;background:'+note['fill']+';border-left:4px solid '+note['marker']+'"><strong>'+e(note['label'])+'</strong><p>'+e(b['text'])+'</p></aside>')
-            else: html.append('<p>'+e(b['text'])+'</p>')
+                html.append('<aside style="padding:12px;background:'+note['fill']+';border-left:4px solid '+note['marker']+'"><strong>'+e(note['label'])+'</strong><p>'+prose(b['text'])+'</p></aside>')
+            else: html.append('<p>'+prose(b['text'])+'</p>')
         html.append('</section>')
     if public_references(content):
         html.append('<h1>참고 자료</h1><ul>')
@@ -106,6 +115,8 @@ def render_xlsx(path, content, project, theme):
         value=str(value)
         if len(value)>32767: raise ValueError('Excel cell exceeds 32767 characters; split Markdown content')
         c=ws.cell(row,col);c.value=value;c.data_type='s';c.font=font(role);c.alignment=Alignment(vertical='top',wrap_text=True)
+        addresses = [url for _,url in url_parts(value, content.get('web_links', [])) if url]
+        if len(addresses) == 1:c.hyperlink = addresses[0]
         return c
     def paragraph(ws,row,value,role='body'):
         ws.merge_cells(start_row=row,start_column=1,end_row=row,end_column=6);cell(ws,row,1,value,role)
@@ -113,7 +124,7 @@ def render_xlsx(path, content, project, theme):
         return row+1
     if theme.get('cover',{}).get('enabled',True):
         ws=sheet('표지');r=paragraph(ws,1,fmt(theme.get('cover',{}).get('title','{title}')),'title')
-        for value in (content['summary'],project['organization'],project['name'],content['version'],project['classification']):r=paragraph(ws,r,value)
+        for value in (content['summary'],project['organization'],project['name'],version_text(content, theme),project['classification']):r=paragraph(ws,r,value)
         if content.get('example'):paragraph(ws,r,'가상 예제 데이터로 작성된 문서입니다.')
     if theme.get('copyright',{}).get('enabled',False):
         ws=sheet('저작권');paragraph(ws,1,fmt(theme['copyright'].get('title','저작권')),'heading_1');paragraph(ws,2,fmt(theme['copyright'].get('text','')))

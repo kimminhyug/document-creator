@@ -101,11 +101,13 @@ def blocks(body, base=None, run=None):
     i = 0
     while i < len(lines):
         line = lines[i]
-        if line.startswith("```"):
+        fence = re.fullmatch(r' {0,3}(`{3,}|~{3,})([^\n]*)', line)
+        if fence:
             flush()
+            marker = fence[1]
             code = []
             i += 1
-            while i < len(lines) and not lines[i].startswith("```"):
+            while i < len(lines) and not re.fullmatch(r' {0,3}' + re.escape(marker[0]) + '{' + str(len(marker)) + r',}\s*', lines[i]):
                 code.append(lines[i]); i += 1
             need(i < len(lines), "unclosed Markdown fence")
             out.append({"type": "code", "text": "\n".join(code) or " "})

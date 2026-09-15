@@ -50,7 +50,8 @@
   },
   "cover": {
     "enabled": true,
-    "title": "{title}"
+    "title": "{title}",
+    "version_label": "버전"
   },
   "copyright": {
     "enabled": true,
@@ -69,7 +70,21 @@
     },
     "heading_1": {
       "size_pt": 16,
-      "bold": true
+      "bold": true,
+      "space_before_pt": 20,
+      "space_after_pt": 10
+    },
+    "heading_2": {
+      "space_before_pt": 16,
+      "space_after_pt": 10
+    },
+    "heading_3": {
+      "space_before_pt": 14,
+      "space_after_pt": 8
+    },
+    "heading_4": {
+      "space_before_pt": 12,
+      "space_after_pt": 8
     },
     "table_header": {
       "size_pt": 9,
@@ -83,5 +98,12 @@
       "size_pt": 8,
       "bold": false
     }
+  },
+  "layout": {
+    "keep_short_sections_max_height_mm": 85,
+    "keep_title_words": true
+  },
+  "table": {
+    "column_width_mode": "content"
   }
 }

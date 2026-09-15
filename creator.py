@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
-from output_adapters import style_token, public_references, render_html, render_xlsx
+from output_adapters import style_token, version_text, public_references, render_html, render_xlsx
 
 ROOT = Path(__file__).resolve().parent
 
@@ -98,6 +98,8 @@ def validate(content, contract, project, theme, release=False):
     if release:
         require(not warnings, "release blocked: example or pending content")
     public_references(content)
+    from inline_links import validate_web_links
+    validate_web_links(content.get('web_links', []))
     validate_theme(theme)
     return warnings
 
@@ -136,15 +138,25 @@ def validate_theme(t):
     require(isinstance(t.get("styles", {}), dict), "theme.styles must be object")
     for role, override in t.get("styles", {}).items():
         require(role in ("title", "heading_1", "heading_2", "heading_3", "heading_4", "body", "table_header", "table_body", "header", "footer"), "unknown style role")
-        require(isinstance(override, dict) and set(override) <= {"font_family", "size_pt", "bold"}, "invalid style override")
+        require(isinstance(override, dict) and set(override) <= {"font_family", "size_pt", "bold", "space_before_pt", "space_after_pt"}, "invalid style override")
         token = style_token(t, role)
         require(text(token["font_family"]) and not re.search(r'[<>;{}\r\n]', token["font_family"]), "invalid style font family")
         require(type(token["size_pt"]) in (int, float) and 0 < token["size_pt"] < 100, "invalid style size")
         require(type(token["bold"]) is bool, "style bold must be boolean")
+        for field in ("space_before_pt", "space_after_pt"):
+            require(type(token[field]) in (int, float) and 0 <= token[field] <= 100, "invalid style spacing")
+    require(isinstance(t.get("cover", {}).get("version_label", "버전"), str), "cover.version_label must be a string")
+    layout = t.get("layout", {})
+    require(isinstance(layout, dict), "theme.layout must be an object")
+    keep_height = layout.get("keep_short_sections_max_height_mm", 85)
+    require(type(keep_height) in (int, float) and 0 <= keep_height <= 120, "invalid short-section height")
     ts = t.get("table", {})
+    require(isinstance(ts, dict), "theme.table must be an object")
     for key, default in (("padding_x_pt", 7), ("padding_y_pt", 7), ("border_pt", .35)):
         value = ts.get(key, default)
         require(type(value) in (int, float) and 0 <= value <= 24, f"invalid table.{key}")
+    require(ts.get("column_width_mode", "content") in ("content", "equal"), "invalid table.column_width_mode")
+    require(type(layout.get("keep_title_words", True)) is bool, "layout.keep_title_words must be boolean")
 
 
 def interpolate(value, content, project):
@@ -162,6 +174,8 @@ def section_blocks(section):
 
 
 def render_docx(path, content, project, theme):
+    from inline_links import add_docx_links
+    from docx.text.run import Run
     from docx import Document
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.oxml import OxmlElement
@@ -185,10 +199,10 @@ def render_docx(path, content, project, theme):
         style.font.size = Pt(token["size_pt"])
         style.font.color.rgb = RGBColor.from_string("000000" if name != "Normal" else theme["colors"]["text"][1:])
         style.paragraph_format.line_spacing = theme["line_spacing"]
-        style.paragraph_format.space_after = Pt(8)
+        style.paragraph_format.space_before = Pt(token["space_before_pt"])
+        style.paragraph_format.space_after = Pt(token["space_after_pt"])
         if name.startswith("Heading"):
             style.paragraph_format.keep_with_next = True
-            style.paragraph_format.space_before = Pt(15)
     hp = sec.header.paragraphs[0]
     hp.text = interpolate(theme["header"]["left"], content, project) + "  |  " + interpolate(theme["header"]["right"], content, project)
     fp = sec.footer.paragraphs[0]
@@ -207,7 +221,7 @@ def render_docx(path, content, project, theme):
         d.add_paragraph(project["organization"])
         d.add_paragraph(interpolate(theme.get("cover", {}).get("title", "{title}"), content, project), "Title")
         d.add_paragraph(content["summary"])
-        d.add_paragraph(f"{content['version']}\n{project['name']}\n{project['classification']}")
+        d.add_paragraph(f"{version_text(content, theme)}\n{project['name']}\n{project['classification']}")
         if content.get("example"):
             d.add_paragraph("가상 예제 데이터로 작성된 문서입니다.")
         d.add_page_break()
@@ -243,19 +257,20 @@ def render_docx(path, content, project, theme):
                 for col in table.columns:
                     col.width = int(width)
                 for idx, value in enumerate(block["headers"]):
-                    table.rows[0].cells[idx].text = value
+                    add_docx_links(table.rows[0].cells[idx].paragraphs[0], value, content.get('web_links', []))
                 repeat = OxmlElement("w:tblHeader")
                 table.rows[0]._tr.get_or_add_trPr().append(repeat)
                 for row in block["rows"]:
                     cells = table.add_row().cells
                     for idx, value in enumerate(row):
-                        cells[idx].text = value
+                        add_docx_links(cells[idx].paragraphs[0], value, content.get('web_links', []))
                 for ri, row in enumerate(table.rows):
                     # Allow long rows to continue to the next page; repeat column labels.
                     for cell in row.cells:
                         for p in cell.paragraphs:
                             p.paragraph_format.space_after = Pt(5)
-                            for run in p.runs:
+                            for element in p._p.iter(qn('w:r')):
+                                run = Run(element, p)
                                 token = style_token(theme, "table_header" if ri == 0 else "table_body")
                                 run.font.size = Pt(token["size_pt"])
                                 run.font.name = token["font_family"]
@@ -288,7 +303,7 @@ def render_docx(path, content, project, theme):
                     note = theme["notes"][block["role"]]
                     p = d.add_paragraph()
                     p.add_run(note["label"] + "  ").bold = True
-                    p.add_run(value)
+                    add_docx_links(p, value, content.get('web_links', []))
                     props = p._p.get_or_add_pPr()
                     shade = OxmlElement("w:shd")
                     shade.set(qn("w:fill"), note["fill"][1:])
@@ -300,7 +315,9 @@ def render_docx(path, content, project, theme):
                     border.append(left)
                     props.append(border)
                 else:
-                    d.add_paragraph(value)
+                    p = d.add_paragraph()
+                    if kind == 'code':p.add_run(value)
+                    else:add_docx_links(p, value, content.get('web_links', []))
     if public_references(content):
         d.add_heading("참고 자료", 1)
         for source in public_references(content):
@@ -314,56 +331,193 @@ def render_docx(path, content, project, theme):
 
 def render_pdf(path, content, project, theme, runtime):
     from html import escape
+    import reportlab
+    from inline_links import url_parts
     from reportlab.lib.colors import HexColor
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.units import mm
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle, Image
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle, Image, KeepTogether
+    from reportlab.platypus.tableofcontents import TableOfContents
 
     require(Path(runtime.get("font_regular", "")).is_file(), "configure runtime font_regular path")
     require(Path(runtime.get("font_bold", "")).is_file(), "configure runtime font_bold path")
-    pdfmetrics.registerFont(TTFont("BodyFont", runtime["font_regular"]))
-    pdfmetrics.registerFont(TTFont("BoldFont", runtime["font_bold"]))
-    pdfmetrics.registerFontFamily("BodyFont", normal="BodyFont", bold="BoldFont")
-    body = ParagraphStyle("body", fontName="BodyFont", fontSize=theme["body_pt"], leading=theme["body_pt"] * theme["line_spacing"], spaceAfter=9, wordWrap="CJK", textColor=HexColor(theme["colors"]["text"]))
-    heading = ParagraphStyle("heading", parent=body, fontName="BoldFont", fontSize=theme["heading_pt"], leading=theme["heading_pt"] * 1.4, spaceBefore=16, spaceAfter=10, keepWithNext=True)
+    # ReportLab does not replace dynamic fonts registered under an existing
+    # name. Distinguish runtime faces so consecutive builds cannot inherit a
+    # different document's font or glyph coverage.
+    def register_face(prefix, filename):
+        identity = str(Path(filename).resolve())
+        name = prefix + hashlib.sha256(identity.encode()).hexdigest()[:12]
+        pdfmetrics.registerFont(TTFont(name, filename))
+        return name
+    body_font = register_face("BodyFont", runtime["font_regular"])
+    bold_font = register_face("BoldFont", runtime["font_bold"])
+    pdfmetrics.registerFontFamily(body_font, normal=body_font, bold=bold_font)
+    # Vera is already shipped, with its license, by our ReportLab dependency.
+    # Use it only for glyphs absent from the configured face; never substitute
+    # a mathematical operator with a different Unicode character.
+    bundled_fonts = Path(reportlab.__file__).parent / "fonts"
+    for name, filename in (("FallbackBody", "Vera.ttf"), ("FallbackBold", "VeraBd.ttf")):
+        pdfmetrics.registerFont(TTFont(name, str(bundled_fonts / filename)))
+
+    def font_runs(value, primary, context):
+        fallback = "FallbackBold" if primary == bold_font else "FallbackBody"
+        runs = []
+        for character in value:
+            if character in "\n\r\t":
+                chosen = primary
+            elif pdfmetrics.getFont(primary).face.charToGlyph.get(ord(character), 0):
+                chosen = primary
+            elif pdfmetrics.getFont(fallback).face.charToGlyph.get(ord(character), 0):
+                chosen = fallback
+            else:
+                raise ValueError(f"PDF font has no glyph U+{ord(character):04X} in {context}")
+            if runs and runs[-1][0] == chosen:
+                runs[-1] = (chosen, runs[-1][1] + character)
+            else:
+                runs.append((chosen, character))
+        return runs
+
+    def measured(value, style):
+        return sum(pdfmetrics.stringWidth(s, font, style.fontSize) for font, s in font_runs(value, style.fontName, style.name))
+
+    def markup(value, style, available=None):
+        # Keep full link destinations even when a visible URL must wrap in a
+        # narrow cell. Only the shared safe HTTP URL parser creates link tags.
+        parts = []
+        for label, url in url_parts(value, content.get('web_links', [])):
+            if available is not None:
+                label = break_long_tokens(label, available, style)
+            visible = "".join(
+                escape(s) if font == style.fontName else f'<font name="{font}">{escape(s)}</font>'
+                for font, s in font_runs(label, style.fontName, style.name)
+            ).replace("\n", "<br/>").replace("\t", "    ")
+            parts.append(f'<a href="{escape(url, quote=True)}">{visible}</a>' if url else visible)
+        return "".join(parts)
+
+    def break_long_tokens(value, available, style):
+        """Keep ordinary words intact; split only tokens wider than a column.
+
+        Prefer identifier punctuation and avoid a final one-character fragment.
+        No glyph is removed, so copied identifiers remain reconstructable.
+        """
+        def split(match):
+            token = match.group()
+            chunks = []
+            while measured(token, style) > available:
+                end = 1
+                while end < len(token) and measured(token[:end + 1], style) <= available:
+                    end += 1
+                require(measured(token[:end], style) <= available, "PDF column is too narrow for one glyph")
+                preferred = [n + 1 for n, c in enumerate(token[:end]) if c in "_./,:" and n + 1 >= end / 2]
+                if preferred:
+                    end = preferred[-1]
+                if len(token) - end == 1 and end > 1:
+                    end -= 1
+                chunks.append(token[:end])
+                token = token[end:]
+            return "\n".join([*chunks, token])
+        return re.sub(r"\S+", split, value)
+
+    body = ParagraphStyle("body", fontName=body_font, fontSize=theme["body_pt"], leading=theme["body_pt"] * theme["line_spacing"], spaceAfter=9, wordWrap="CJK", textColor=HexColor(theme["colors"]["text"]))
+    heading = ParagraphStyle("heading", parent=body, fontName=bold_font, fontSize=theme["heading_pt"], leading=theme["heading_pt"] * 1.4, spaceBefore=16, spaceAfter=10, keepWithNext=True)
     title = ParagraphStyle("title", parent=heading, fontSize=theme["title_pt"], leading=theme["title_pt"] * 1.4, textColor=HexColor("#000000"))
     cell_style = ParagraphStyle("cell", parent=body, fontSize=theme["table_pt"], leading=theme["table_pt"] * 1.45, spaceAfter=0)
-    head_cell = ParagraphStyle("headcell", parent=cell_style, fontName="BoldFont", textColor=HexColor(theme["colors"]["table_text"]))
+    head_cell = ParagraphStyle("headcell", parent=cell_style, fontName=bold_font, textColor=HexColor(theme["colors"]["table_text"]))
     def apply_token(style, role):
         token = style_token(theme, role)
-        style.fontName = "BoldFont" if token["bold"] else "BodyFont"
+        style.fontName = bold_font if token["bold"] else body_font
         style.fontSize = token["size_pt"]
         style.leading = token["size_pt"] * theme["line_spacing"]
+        style.spaceBefore = token["space_before_pt"]
+        style.spaceAfter = token["space_after_pt"]
         return style
     for style, role in ((body, "body"), (heading, "heading_1"), (title, "title"), (cell_style, "table_body"), (head_cell, "table_header")):
         apply_token(style, role)
+    # CJK's character-by-character wrapping splits times and physical names.
+    # Table columns are measured below, with explicit breaks only for long tokens.
+    for style in (cell_style, head_cell):
+        style.wordWrap = "LTR"
+        style.splitLongWords = False
+    if theme.get("layout", {}).get("keep_title_words", True):
+        title.wordWrap = "LTR"
+        title.splitLongWords = False
     width, height = theme["page_width_mm"] * mm, theme["page_height_mm"] * mm
     margin = theme["margin_mm"] * mm
-    usable = width - 2 * margin
+    # SimpleDocTemplate's frame has 6pt internal padding on both sides.
+    usable = width - 2 * margin - 12
     table_tokens = theme.get("table", {})
 
-    def para(s, style=body):
-        return Paragraph(escape(s).replace("\n", "<br/>"), style)
+    def para(s, style=body, available=None):
+        if style is title and theme.get("layout", {}).get("keep_title_words", True):
+            available = usable
+        return Paragraph(markup(s, style, available), style)
+
+    def column_widths(block):
+        count = len(block["headers"])
+        if table_tokens.get("column_width_mode", "content") == "equal":
+            return [usable / count] * count
+        padding = 2 * table_tokens.get("padding_x_pt", 7)
+        needs = []
+        for col in range(count):
+            tokens = [(block["headers"][col], head_cell)] + [(row[col], cell_style) for row in block["rows"]]
+            needs.append(padding + max([measured(word, style) for value, style in tokens for word in value.split()] or [12]))
+        if sum(needs) <= usable:
+            extra = (usable - sum(needs)) / count
+            return [n + extra for n in needs]
+        minimum = min(36, usable / count / 2)
+        weights = [max(1, n - minimum) for n in needs]
+        remaining = usable - minimum * count
+        return [minimum + remaining * w / sum(weights) for w in weights]
+
+    class NavigationDocument(SimpleDocTemplate):
+        def afterFlowable(self, flowable):
+            if hasattr(flowable, "toc_title"):
+                key = flowable.toc_key
+                self.canv.bookmarkHorizontalAbsolute(key, self.frame._y + flowable.height)
+                self.canv.addOutlineEntry(flowable.toc_title, key, 0, False)
+                self.notify("TOCEntry", (0, markup(flowable.toc_title, body), self.page, key))
+
+    class ShortSection(KeepTogether):
+        """Keep only measured short sections together; long sections split normally."""
+        def split(self, available_width, available_height):
+            if getattr(self, "_wrapInfo", None) != (available_width, available_height):
+                self.wrap(available_width, available_height)
+            limit = theme.get("layout", {}).get("keep_short_sections_max_height_mm", 85) * mm
+            if self._H > limit:
+                # The first split result is drawn immediately by Platypus. Use a
+                # zero-height spacer so headings re-enter normal keepWithNext handling.
+                return [Spacer(0, 0), *self._content]
+            return super().split(available_width, available_height)
 
     def decorate(canvas, doc):
+        def draw_text(value, x, y, token, right=False):
+            primary = bold_font if token["bold"] else body_font
+            runs = font_runs(value, primary, "header/footer")
+            if right:
+                x -= sum(pdfmetrics.stringWidth(s, font, token["size_pt"]) for font, s in runs)
+            text_object = canvas.beginText(x, y)
+            for font, s in runs:
+                text_object.setFont(font, token["size_pt"])
+                text_object.textOut(s)
+            canvas.drawText(text_object)
         canvas.saveState()
         canvas.setFillColor(HexColor(theme["colors"]["background"]))
         canvas.rect(0, 0, width, height, fill=1, stroke=0)
         if doc.page > 1:
             token = style_token(theme, "header")
-            canvas.setFont("BoldFont" if token["bold"] else "BodyFont", token["size_pt"])
+            canvas.setFont(bold_font if token["bold"] else body_font, token["size_pt"])
             canvas.setFillColor(HexColor(theme["colors"]["muted"]))
-            canvas.drawString(margin, height - 12 * mm, interpolate(theme["header"]["left"], content, project))
-            canvas.drawRightString(width - margin, height - 12 * mm, interpolate(theme["header"]["right"], content, project))
+            draw_text(interpolate(theme["header"]["left"], content, project), margin, height - 12 * mm, token)
+            draw_text(interpolate(theme["header"]["right"], content, project), width - margin, height - 12 * mm, token, right=True)
             token = style_token(theme, "footer")
-            canvas.setFont("BoldFont" if token["bold"] else "BodyFont", token["size_pt"])
-            canvas.drawString(margin, 12 * mm, interpolate(theme["footer"]["left"], content, project))
+            canvas.setFont(bold_font if token["bold"] else body_font, token["size_pt"])
+            draw_text(interpolate(theme["footer"]["left"], content, project), margin, 12 * mm, token)
             canvas.drawRightString(width - margin, 12 * mm, str(doc.page))
         canvas.restoreState()
 
-    story = [Spacer(1, 25 * mm), para(project["organization"]), para(interpolate(theme.get("cover", {}).get("title", "{title}"), content, project), title), para(content["summary"]), Spacer(1, 10 * mm), para(content["version"]), para(project["name"]), para(project["classification"])]
+    story = [Spacer(1, 25 * mm), para(project["organization"]), para(interpolate(theme.get("cover", {}).get("title", "{title}"), content, project), title), para(content["summary"]), Spacer(1, 10 * mm), para(version_text(content, theme)), para(project["name"]), para(project["classification"])]
     if content.get("example"):
         story.append(para("가상 예제 데이터로 작성된 문서입니다."))
     if not theme.get("cover", {}).get("enabled", True):
@@ -376,12 +530,18 @@ def render_pdf(path, content, project, theme, runtime):
         if story:
             story.append(PageBreak())
         story.append(para(theme.get("contents", {}).get("title", "문서 구성"), heading))
-        for n, section in enumerate(content["sections"], 1):
-            story.append(para(f"{n}. {section['title']}"))
+        toc = TableOfContents()
+        toc.levelStyles = [ParagraphStyle("contents-entry", parent=body, rightIndent=28, spaceBefore=8, spaceAfter=6)]
+        toc.dotsMinLevel = 0
+        story.append(toc)
     if story:
         story.append(PageBreak())
     for n, section in enumerate(content["sections"], 1):
-        story.append(para(f"{n} {section['title']}", heading))
+        section_start = len(story)
+        section_heading = para(f"{n} {section['title']}", heading)
+        section_heading.toc_title = f"{n} {section['title']}"
+        section_heading.toc_key = f"section-{n}"
+        story.append(section_heading)
         for block in section_blocks(section):
             if block["type"] == "heading":
                 size = theme["body_pt"] + (4 - block["level"])
@@ -395,9 +555,13 @@ def render_pdf(path, content, project, theme, runtime):
                 img.drawHeight = img.imageHeight * scale
                 story.extend([img, para(block["alt"])])
             elif block["type"] == "table":
-                rows = [[para(h, head_cell) for h in block["headers"]]]
-                rows.extend([[para(v, cell_style) for v in row] for row in block["rows"]])
-                tab = Table(rows, colWidths=[usable / len(block["headers"])] * len(block["headers"]), repeatRows=1, hAlign="LEFT", splitByRow=1, splitInRow=1)
+                widths = column_widths(block)
+                padding = 2 * table_tokens.get("padding_x_pt", 7)
+                def cell(value, col, style):
+                    return para(value, style, widths[col] - padding)
+                rows = [[cell(h, col, head_cell) for col, h in enumerate(block["headers"])]]
+                rows.extend([[cell(v, col, cell_style) for col, v in enumerate(row)] for row in block["rows"]])
+                tab = Table(rows, colWidths=widths, repeatRows=1, hAlign="LEFT", splitByRow=1, splitInRow=1)
                 tab.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), HexColor(theme["colors"]["table_fill"])), ("VALIGN", (0, 0), (-1, -1), "TOP"), ("LINEBELOW", (0, 0), (-1, -1), table_tokens.get("border_pt", .35), HexColor(theme["colors"]["border"])), ("LEFTPADDING", (0, 0), (-1, -1), table_tokens.get("padding_x_pt", 7)), ("RIGHTPADDING", (0, 0), (-1, -1), table_tokens.get("padding_x_pt", 7)), ("TOPPADDING", (0, 0), (-1, -1), table_tokens.get("padding_y_pt", 7)), ("BOTTOMPADDING", (0, 0), (-1, -1), table_tokens.get("padding_y_pt", 7))]))
                 story.extend([tab, Spacer(1, 8)])
             elif block["type"] == "note":
@@ -407,14 +571,17 @@ def render_pdf(path, content, project, theme, runtime):
                 story.extend([tab, Spacer(1, 9)])
             else:
                 story.append(para(block["text"]))
+        if theme.get("layout", {}).get("keep_short_sections_max_height_mm", 85):
+            section_story = story[section_start:]
+            story[section_start:] = [ShortSection(section_story)]
     if public_references(content):
         story.append(para("참고 자료", heading))
         for source in public_references(content):
             story.append(para(source["title"] + ("\n" + source["url"] if source.get("url") else "")))
     if theme["ending"].get("enabled", True):
         story.extend([PageBreak(), Spacer(1, 20 * mm), para(interpolate(theme["ending"]["title"], content, project), title), para(interpolate(theme["ending"]["text"], content, project))])
-    doc = SimpleDocTemplate(str(path), pagesize=(width, height), leftMargin=margin, rightMargin=margin, topMargin=margin, bottomMargin=margin, title=content["title"], author=project["organization"])
-    doc.build(story, onFirstPage=decorate, onLaterPages=decorate)
+    doc = NavigationDocument(str(path), pagesize=(width, height), leftMargin=margin, rightMargin=margin, topMargin=margin, bottomMargin=margin, title=content["title"], author=project["organization"])
+    doc.multiBuild(story, onFirstPage=decorate, onLaterPages=decorate)
 
 
 def digest(path):

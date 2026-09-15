@@ -9,3 +9,4 @@
 - [구현 구조](ARCHITECTURE.md)
 - [사용자 요구사항 대조](REQUIREMENTS_CHECKLIST.md)
 - [구현 상태와 검증](STATUS.md)
+- [반복 검증 보고서](VALIDATION_REPORT.md)

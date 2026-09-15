@@ -61,10 +61,29 @@ class FixtureHandler(BaseHTTPRequestHandler):
             time.sleep(0.25)
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(b'{"ready":true}')
+            try:
+                self.wfile.write(b'{"ready":true}')
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                pass  # Failure-stage cases intentionally close pages with pending requests.
             return
         if self.path == "/login":
             body = '''<input id="username"><input id="password" type="password"><button id="submit" onclick="document.cookie='session=yes;path=/';document.body.innerHTML='<div id=authenticated>ok</div>'">Sign in</button>'''
+        elif self.path == "/spa":
+            body = '''<input id="username"><input id="password" type="password"><button id="submit">Sign in</button>
+<script>
+const authenticated = document.cookie.includes('session=yes') && sessionStorage.getItem('auth') === 'yes' && localStorage.getItem('preference') === 'kept';
+if (authenticated) {
+  document.body.innerHTML = '<div id="authenticated">ok</div><div id="ready">waiting</div>';
+  fetch('/api/data').then(r => r.json()).then(() => document.body.dataset.loaded = 'yes');
+} else {
+  document.querySelector('#submit').onclick = () => {
+    document.cookie = 'session=yes;path=/';
+    sessionStorage.setItem('auth', 'yes');
+    localStorage.setItem('preference', 'kept');
+    document.body.innerHTML = '<div id="authenticated">ok</div>';
+  };
+}
+</script>'''
         elif self.path == "/dashboard" and "session=yes" in self.headers.get("Cookie", ""):
             body = '''<style>html,body{margin:0;background:white}@media(prefers-color-scheme:dark){html,body{background:rgb(10,20,30)}}</style><div id="ready">waiting</div><script>fetch('/api/data').then(r=>r.json()).then(()=>{document.querySelector('#ready').textContent=navigator.language;document.body.dataset.loaded='yes';document.body.dataset.locale=navigator.language})</script>'''
         else:
@@ -103,6 +122,7 @@ class CaptureOptionIntegrationTests(unittest.TestCase):
                 results = {item["id"]: item for item in manifest["captures"]}
                 self.assertEqual(results["dashboard"]["status"], "passed", manifest)
                 self.assertEqual(results["missing-api"]["error"], "Timeout")
+                self.assertEqual(results["missing-api"]["stage"], "api_wait")
                 path = results["dashboard"]["files"][0]["path"]
                 self.assertEqual(path, "screenshots/manual/dark/en-US/640x480/summary-001.png")
                 from PIL import Image
@@ -113,6 +133,95 @@ class CaptureOptionIntegrationTests(unittest.TestCase):
                     if file.is_file():
                         for secret in secrets.values():
                             self.assertNotIn(secret.encode(), file.read_bytes())
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
+    def test_spa_login_same_tab_preserves_session_cookie_local_storage_and_hash(self):
+        runtime_path = ROOT / ".local/runtime.json"
+        if not runtime_path.exists() or "chromium" not in read(runtime_path):
+            self.skipTest("Playwright runtime required")
+        server = ThreadingHTTPServer(("127.0.0.1", 0), FixtureHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            config = load("demo", "local")
+            base = f"http://127.0.0.1:{server.server_port}"
+            config["allowed_origins"] = [base]
+            config["profile"].update(workers=2, timeout_ms=2000, navigation_timeout_ms=3000, api_timeout_ms=1500)
+            config["login"] = prepare_login({"login": {**login_config(), "path": "/spa"}}, "DOC__DEMO__LOCAL", base, [base])
+            config["pages"] = []
+            # Identical URL, hash-only destination, and a different hash all require
+            # the original tab's sessionStorage plus cookie/localStorage to succeed.
+            for page_id, target in (("same", "/spa"), ("hash", "/spa#dashboard"), ("detail", "/spa#detail/one")):
+                page = {"id": page_id, "url": base + target, "mode": "viewport", "ready_selector": "body[data-loaded=yes] #ready", "wait_for_responses": [{"path": "/api/data"}]}
+                prepare_capture(page, config["profile"], base, [base])
+                config["pages"].append(page)
+            secrets = {"DOC__DEMO__LOCAL_LOGIN_USERNAME": "private-fixture-account", "DOC__DEMO__LOCAL_LOGIN_PASSWORD": "private-fixture-password"}
+            with tempfile.TemporaryDirectory() as temp, patch.dict("os.environ", secrets):
+                run, manifest = asyncio.run(collect(config, read(runtime_path), temp))
+                self.assertEqual(manifest["status"], "passed", manifest)
+                self.assertEqual(len(manifest["captures"]), 3)
+                self.assertEqual(len({item["pid"] for item in manifest["captures"]}), 2)
+                for item in manifest["captures"]:
+                    self.assertEqual(len(item["files"]), 1)
+                for file in run.rglob("*"):
+                    if file.is_file():
+                        for secret in secrets.values():
+                            self.assertNotIn(secret.encode(), file.read_bytes())
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
+    def test_failure_stages_are_preserved_without_raw_errors(self):
+        runtime_path = ROOT / ".local/runtime.json"
+        if not runtime_path.exists() or "chromium" not in read(runtime_path):
+            self.skipTest("Playwright runtime required")
+        server = ThreadingHTTPServer(("127.0.0.1", 0), FixtureHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            config = load("demo", "local")
+            base = f"http://127.0.0.1:{server.server_port}"
+            config["allowed_origins"] = [base]
+            config["profile"].update(timeout_ms=1200, navigation_timeout_ms=2000, api_timeout_ms=1200)
+            config["login"] = prepare_login({"login": login_config()}, "DOC__DEMO__LOCAL", base, [base])
+            config["pages"] = []
+            cases = [
+                ("http", {"url": base + "/forbidden"}, "navigation"),
+                ("ready", {"ready_selector": "#missing-ready"}, "ready"),
+                ("mask", {"masks": ["#missing-private"]}, "masks"),
+                ("capture", {"mode": "element", "selector": "#missing-element"}, "capture"),
+            ]
+            for page_id, overrides, _ in cases:
+                page = {"id": page_id, "url": base + "/dashboard", "mode": "viewport", "ready_selector": "#ready", **overrides}
+                prepare_capture(page, config["profile"], base, [base])
+                config["pages"].append(page)
+            secrets = {"DOC__DEMO__LOCAL_LOGIN_USERNAME": "stage-private-account", "DOC__DEMO__LOCAL_LOGIN_PASSWORD": "stage-private-password"}
+            with tempfile.TemporaryDirectory() as temp, patch.dict("os.environ", secrets):
+                run, manifest = asyncio.run(collect(config, read(runtime_path), temp))
+                result = {item["id"]: item for item in manifest["captures"]}
+                for page_id, _, stage in cases:
+                    self.assertEqual(result[page_id]["status"], "failed", result[page_id])
+                    self.assertEqual(result[page_id]["stage"], stage)
+                    self.assertEqual(result[page_id]["files"], [])
+                config["pages"] = [config["pages"][0]]
+                config["login"]["success_selector"] = "#never-authenticated"
+                _, failed_login = asyncio.run(collect(config, read(runtime_path), temp))
+                self.assertEqual(failed_login["captures"][0]["stage"], "login_success")
+                config["login"]["success_selector"] = "#authenticated"
+                config["login"]["submit_selector"] = "#missing-submit"
+                _, failed_submit = asyncio.run(collect(config, read(runtime_path), temp))
+                self.assertEqual(failed_submit["captures"][0]["stage"], "login_submit")
+                for recorded in (manifest, failed_login, failed_submit):
+                    encoded = json.dumps(recorded)
+                    for secret in secrets.values():
+                        self.assertNotIn(secret, encoded)
+                    for item in recorded["captures"]:
+                        self.assertEqual(set(item) - {"id", "status", "error", "stage", "started", "finished", "pid", "files"}, set())
+                        self.assertIn(item["error"], ("Timeout", "CaptureFailed"))
         finally:
             server.shutdown()
             server.server_close()

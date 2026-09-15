@@ -14,7 +14,7 @@
 | 테마·언어·해상도별 캡처 | profile와 페이지 설정 | 실제 dark/en-US/640×480 및 경로 검증 |
 | 로딩·API 타임아웃 | wait_for_responses/ready_selector | 실제 응답 및 Timeout 검증 |
 | 계정 로그인 | 환경변수 또는 storageState | 로컬 로그인, 비밀 미출력 |
-| PostgreSQL 조회만 | collector/postgres.py | SQL 정책/권한/제한 검사, 실 DB 미검증 |
+| PostgreSQL 조회만 | collector/postgres.py | 로컬 PostgreSQL 실제 조회·권한 거부·시간 제한·중단/복구 검증; 운영 DB 별도 검증 필요 |
 | 시니어 문서팀·여러 에이전트 | roles/workflows/ai_runner.py | 역할·병렬 작업사본·실패·게이트 |
 | 새로운 조사 대상 추가 | flow add | 분류/중복/INDEX 갱신 테스트 |
 | Git 연결과 최초 커밋 | origin + check_staged.py | 비밀·생성 결과 제외 후 커밋 |

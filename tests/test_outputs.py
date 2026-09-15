@@ -8,6 +8,24 @@ import creator
 from output_adapters import render_html, render_xlsx
 
 class OutputTests(unittest.TestCase):
+    def test_public_web_address_is_clickable_without_losing_printed_text(self):
+        address='https://example.test/path?a=1&b=2'
+        self.content['web_links']=[address]
+        self.content['sections'][0]['blocks'].append({'type':'paragraph','text':'접속 ('+address+')'})
+        with tempfile.TemporaryDirectory() as temp:
+            folder=Path(temp)
+            render_html(folder/'doc.html',self.content,self.project,self.theme)
+            self.assertIn('href="https://example.test/path?a=1&amp;b=2"',(folder/'doc.html').read_text('utf-8'))
+            creator.render_docx(folder/'doc.docx',self.content,self.project,self.theme)
+            with ZipFile(folder/'doc.docx') as z:
+                self.assertIn('w:hyperlink',z.read('word/document.xml').decode())
+                self.assertIn('Target="https://example.test/path?a=1&amp;b=2"',z.read('word/_rels/document.xml.rels').decode())
+            self.assertIn(address,'\n'.join(p.text for p in Document(folder/'doc.docx').paragraphs))
+            render_xlsx(folder/'doc.xlsx',self.content,self.project,self.theme)
+            wb=load_workbook(folder/'doc.xlsx')
+            links=[c.hyperlink.target for ws in wb for row in ws for c in row if c.hyperlink]
+            self.assertIn(address,links);wb.close()
+
     def setUp(self):
         self.content=creator.read_json(creator.ROOT/'examples/demo/content/table-spec.json')
         self.project=creator.read_json(creator.ROOT/'examples/demo/content/project.json')
