@@ -1,0 +1,14 @@
+{
+  "id": "user_manual",
+  "name": "사용자 매뉴얼",
+  "version": "0.1",
+  "required_sections": [
+    "overview",
+    "environment",
+    "features",
+    "usage",
+    "troubleshooting",
+    "references"
+  ],
+  "validation_scope": "section presence, block shape, references, source and pending status; detailed domain validation remains manual"
+}

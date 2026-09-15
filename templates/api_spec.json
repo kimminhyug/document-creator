@@ -1,0 +1,15 @@
+{
+  "id": "api_spec",
+  "name": "API 명세서",
+  "version": "0.1",
+  "required_sections": [
+    "overview",
+    "catalog",
+    "common",
+    "request",
+    "response",
+    "errors",
+    "references"
+  ],
+  "validation_scope": "section presence, block shape, references, source and pending status; detailed domain validation remains manual"
+}

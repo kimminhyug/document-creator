@@ -1,0 +1,15 @@
+{
+  "workers": 2,
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "locale": "ko-KR",
+  "timezone": "Asia/Seoul",
+  "timeout_ms": 10000,
+  "overlap_px": 120,
+  "max_segments": 12,
+  "color_scheme": "light",
+  "navigation_timeout_ms": 10000,
+  "api_timeout_ms": 15000
+}

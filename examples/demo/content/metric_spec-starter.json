@@ -1,0 +1,79 @@
+{
+  "id": "METRIC_SPEC-STARTER",
+  "type": "metric_spec",
+  "title": "지표 계산식 명세서 작성 시작본",
+  "version": "0.1",
+  "summary": "확인한 자료를 입력하고 미확정 항목을 담당자가 검토합니다.",
+  "sources": [
+    {
+      "id": "SRC-01",
+      "title": "작성 규칙",
+      "locator": "rules/"
+    }
+  ],
+  "sections": [
+    {
+      "id": "overview",
+      "title": "overview",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "catalog",
+      "title": "catalog",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "definition",
+      "title": "definition",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "formula",
+      "title": "formula",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "data_mapping",
+      "title": "data_mapping",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "examples",
+      "title": "examples",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "references",
+      "title": "references",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    }
+  ]
+}

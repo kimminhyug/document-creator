@@ -1,0 +1,70 @@
+{
+  "id": "FUNCTIONAL_SPEC-STARTER",
+  "type": "functional_spec",
+  "title": "기능 명세서 작성 시작본",
+  "version": "0.1",
+  "summary": "확인한 자료를 입력하고 미확정 항목을 담당자가 검토합니다.",
+  "sources": [
+    {
+      "id": "SRC-01",
+      "title": "작성 규칙",
+      "locator": "rules/"
+    }
+  ],
+  "sections": [
+    {
+      "id": "overview",
+      "title": "overview",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "features",
+      "title": "features",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "rules",
+      "title": "rules",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "behavior",
+      "title": "behavior",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "acceptance",
+      "title": "acceptance",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "references",
+      "title": "references",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    }
+  ]
+}

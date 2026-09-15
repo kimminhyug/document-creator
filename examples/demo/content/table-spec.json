@@ -1,0 +1,226 @@
+{
+  "id": "DATA-DEMO-001",
+  "type": "table_spec",
+  "title": "설비 상태 이력 테이블 명세서",
+  "version": "0.1",
+  "example": true,
+  "summary": "설비 기본 정보와 상태 이력의 구조를 설명합니다. 컬럼 의미와 시간 경계, 관계를 확인하여 데이터 조회와 계산에 활용할 수 있습니다.",
+  "sources": [
+    {
+      "id": "SRC-01",
+      "title": "테이블 명세서 작성 가이드의 가상 설계 사례",
+      "locator": "rules/테이블_명세서_작성_가이드.md / 6절과 7절"
+    }
+  ],
+  "sections": [
+    {
+      "id": "overview",
+      "title": "문서 개요",
+      "status": "confirmed",
+      "sources": [
+        "SRC-01"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "이 문서는 가상의 설비 데이터를 사용한 테이블 명세서입니다. 실제 DB 구조나 적용 결과를 의미하지 않습니다."
+        },
+        {
+          "type": "note",
+          "role": "info",
+          "text": "한 행의 의미와 NULL의 의미를 먼저 확인하세요. 계산 변수와 DB 컬럼은 별도로 관리합니다."
+        }
+      ]
+    },
+    {
+      "id": "catalog",
+      "title": "테이블 목록",
+      "status": "confirmed",
+      "sources": [
+        "SRC-01"
+      ],
+      "blocks": [
+        {
+          "type": "table",
+          "headers": [
+            "테이블",
+            "용도",
+            "한 행의 의미"
+          ],
+          "rows": [
+            [
+              "equipment",
+              "설비 기본 정보",
+              "설비 한 대"
+            ],
+            [
+              "equipment_state_history",
+              "설비 상태 이력",
+              "설비 한 대의 연속된 상태 구간"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "columns",
+      "title": "컬럼 정의",
+      "status": "confirmed",
+      "sources": [
+        "SRC-01"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "equipment_state_history의 가상 컬럼 정의입니다. TIMESTAMP의 실제 선언과 시간대 지원은 DBMS 결정 후 확정합니다."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "컬럼",
+            "타입",
+            "NULL",
+            "의미"
+          ],
+          "rows": [
+            [
+              "history_id",
+              "BIGINT",
+              "불가",
+              "상태 구간의 고유 ID"
+            ],
+            [
+              "equipment_id",
+              "VARCHAR(20)",
+              "불가",
+              "설비 ID. equipment를 참조"
+            ],
+            [
+              "state",
+              "VARCHAR(20)",
+              "불가",
+              "RUNNING / READY / DOWN / UNKNOWN"
+            ],
+            [
+              "start_at",
+              "TIMESTAMP",
+              "불가",
+              "상태 시작 시각. UTC, 시작 포함"
+            ],
+            [
+              "end_at",
+              "TIMESTAMP",
+              "허용",
+              "종료 시각. NULL은 미확정, 종료 제외"
+            ],
+            [
+              "received_at",
+              "TIMESTAMP",
+              "불가",
+              "마지막 수신 또는 정정 반영 시각"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "constraints",
+      "title": "키와 제약조건",
+      "status": "confirmed",
+      "sources": [
+        "SRC-01"
+      ],
+      "blocks": [
+        {
+          "type": "table",
+          "headers": [
+            "구분",
+            "기준",
+            "적용 위치"
+          ],
+          "rows": [
+            [
+              "PK",
+              "history_id는 고유하며 NULL 불가",
+              "DB 제약 설계"
+            ],
+            [
+              "FK",
+              "equipment_id가 equipment에 존재",
+              "DB 제약 설계"
+            ],
+            [
+              "시간 순서",
+              "종료가 있으면 시작보다 늦어야 함",
+              "DB CHECK 설계"
+            ],
+            [
+              "상태 겹침",
+              "같은 설비 구간의 겹침 검출",
+              "별도 품질 검사"
+            ]
+          ]
+        },
+        {
+          "type": "note",
+          "role": "warning",
+          "text": "PK와 FK를 통과해도 시간 구간의 누락이나 겹침이 없다는 뜻은 아닙니다."
+        }
+      ]
+    },
+    {
+      "id": "examples",
+      "title": "데이터 예시",
+      "status": "confirmed",
+      "sources": [
+        "SRC-01"
+      ],
+      "blocks": [
+        {
+          "type": "table",
+          "headers": [
+            "설비",
+            "상태",
+            "UTC 구간"
+          ],
+          "rows": [
+            [
+              "OHT-01",
+              "RUNNING",
+              "2026-09-15 00:00 ~ 01:00"
+            ],
+            [
+              "OHT-01",
+              "DOWN",
+              "2026-09-15 01:00 ~ 01:15"
+            ],
+            [
+              "OHT-01",
+              "READY",
+              "2026-09-15 01:15 ~ 종료 미확정"
+            ]
+          ]
+        },
+        {
+          "type": "note",
+          "role": "example",
+          "text": "KST 10시 경계는 DOWN 구간에 포함됩니다. READY의 종료 미확정을 현재까지 정상 상태였다는 의미로 단정하지 않습니다."
+        }
+      ]
+    },
+    {
+      "id": "references",
+      "title": "관련 문서",
+      "status": "confirmed",
+      "sources": [
+        "SRC-01"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "지표 계산의 포함 구간과 상태 분류는 지표 계산식 명세서에서 정의합니다. API 응답 필드는 API 명세서와 연결합니다."
+        }
+      ]
+    }
+  ]
+}

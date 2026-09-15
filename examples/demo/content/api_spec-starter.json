@@ -1,0 +1,79 @@
+{
+  "id": "API_SPEC-STARTER",
+  "type": "api_spec",
+  "title": "API 명세서 작성 시작본",
+  "version": "0.1",
+  "summary": "확인한 자료를 입력하고 미확정 항목을 담당자가 검토합니다.",
+  "sources": [
+    {
+      "id": "SRC-01",
+      "title": "작성 규칙",
+      "locator": "rules/"
+    }
+  ],
+  "sections": [
+    {
+      "id": "overview",
+      "title": "overview",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "catalog",
+      "title": "catalog",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "common",
+      "title": "common",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "request",
+      "title": "request",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "response",
+      "title": "response",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "errors",
+      "title": "errors",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    },
+    {
+      "id": "references",
+      "title": "references",
+      "status": "pending",
+      "owner": "문서 담당자",
+      "reason": "실제 자료 입력 필요",
+      "sources": [],
+      "blocks": []
+    }
+  ]
+}

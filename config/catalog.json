@@ -1,0 +1,4 @@
+{
+  "companies": {"demo": "examples/demo/companies/demo"},
+  "products": {"demo": "examples/demo/products/demo"}
+}

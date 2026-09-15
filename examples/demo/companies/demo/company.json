@@ -1,0 +1,10 @@
+{
+  "id": "demo",
+  "organization": "문서 자동화 예제",
+  "theme": "theme.json",
+  "templates": ["user_manual", "functional_spec", "api_spec", "metric_spec", "table_spec"],
+  "capture_profiles": ["desktop"],
+  "workflow": "senior-document-team",
+  "style_authority": "company",
+  "source_format": "markdown"
+}

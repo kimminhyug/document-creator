@@ -1,0 +1,17 @@
+{
+  "id": "senior-document-team", "version": "1.0", "source_format": "markdown",
+  "stages": [
+    {"id": "intake", "role": "lead", "kinds": ["scope"], "rework": "intake"},
+    {"id": "research_inventory", "role": "research_lead", "kinds": ["inventory"], "rework": "intake"},
+    {"id": "research_architecture", "role": "architect", "kinds": ["architecture"], "rework": "research_inventory"},
+    {"id": "research_behavior", "role": "ui_researcher", "kinds": ["page"], "rework": "research_inventory"},
+    {"id": "research_data", "role": "data_researcher", "kinds": ["api", "metric", "table"], "rework": "research_inventory"},
+    {"id": "research_reconcile", "role": "research_lead", "kinds": ["reconcile"], "rework": "research_architecture"},
+    {"id": "outline", "role": "lead", "kinds": ["outline"], "rework": "research_reconcile"},
+    {"id": "draft", "role": "writer", "kinds": ["document_index", "document_section"], "rework": "outline"},
+    {"id": "fact_check", "role": "fact_checker", "kinds": ["fact_check"], "rework": "draft"},
+    {"id": "review", "role": "reviewer", "kinds": ["review"], "rework": "draft"},
+    {"id": "style_check", "role": "style_qa", "kinds": ["style_check"], "rework": "draft"},
+    {"id": "publish", "role": "lead", "kinds": ["publish"], "rework": "style_check"}
+  ]
+}

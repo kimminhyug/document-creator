@@ -1,0 +1,14 @@
+{
+  "driver": "postgresql",
+  "connection_env_prefix": "DOC__DEMO__LOCAL",
+  "sslmode": "verify-full",
+  "max_rows": 100,
+  "max_cell_chars": 1000,
+  "timeout_ms": 5000,
+  "relations": {
+    "equipment": {"schema": "documentation", "table": "equipment", "columns": ["equipment_id", "equipment_name"]}
+  },
+  "queries": [
+    {"id": "equipment-list", "relation": "equipment", "columns": ["equipment_id", "equipment_name"], "filters": [], "order_by": [{"column": "equipment_id", "direction": "asc"}]}
+  ]
+}

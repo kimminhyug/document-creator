@@ -1,0 +1,7 @@
+{
+  "pages": [
+    {"id": "summary", "path": "/summary", "mode": "segments", "ready_selector": "#ready", "masks": [".private"]},
+    {"id": "history", "path": "/history", "mode": "viewport", "ready_selector": "#ready", "masks": [".private"]},
+    {"id": "settings", "path": "/settings", "mode": "element", "ready_selector": "#ready", "selector": "main", "masks": [".private"]}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "enabled": false,
+  "workers": 2,
+  "timeout_seconds": 300,
+  "default": {"command": [], "pass_env": []},
+  "roles": {},
+  "agents": {}
+}

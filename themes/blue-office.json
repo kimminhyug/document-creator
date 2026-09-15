@@ -1,0 +1,87 @@
+{
+  "id": "blue-office",
+  "version": "0.1",
+  "font_family": "Malgun Gothic",
+  "page_width_mm": 210,
+  "page_height_mm": 297,
+  "margin_mm": 22,
+  "body_pt": 10.5,
+  "title_pt": 28,
+  "heading_pt": 16,
+  "table_pt": 9,
+  "line_spacing": 1.5,
+  "colors": {
+    "text": "#202D3A",
+    "muted": "#5D6E80",
+    "accent": "#246BCE",
+    "table_fill": "#DCEAF9",
+    "table_text": "#152638",
+    "border": "#D6E0EA",
+    "background": "#FFFFFF"
+  },
+  "notes": {
+    "info": {
+      "label": "참고",
+      "fill": "#EEF5FF",
+      "marker": "#246BCE"
+    },
+    "warning": {
+      "label": "확인 필요",
+      "fill": "#FFF5E5",
+      "marker": "#BC791D"
+    },
+    "example": {
+      "label": "예시",
+      "fill": "#F0F4F8",
+      "marker": "#697F99"
+    }
+  },
+  "header": {
+    "left": "{organization}",
+    "right": "{title} · {version}"
+  },
+  "footer": {
+    "left": "{classification}"
+  },
+  "ending": {
+    "enabled": true,
+    "title": "문서 문의",
+    "text": "{organization}\n{contact}\n문서 내용 변경 시 관련 명세를 함께 확인하세요."
+  },
+  "cover": {
+    "enabled": true,
+    "title": "{title}"
+  },
+  "copyright": {
+    "enabled": true,
+    "title": "저작권 안내",
+    "text": "{organization}\n이 문서는 서식 검증을 위한 예제입니다. 실제 저작권 문구는 회사 정책에 따라 설정합니다."
+  },
+  "contents": {
+    "enabled": true,
+    "title": "목차"
+  },
+  "styles": {
+    "body": {
+      "font_family": "Malgun Gothic",
+      "size_pt": 10.5,
+      "bold": false
+    },
+    "heading_1": {
+      "size_pt": 16,
+      "bold": true
+    },
+    "table_header": {
+      "size_pt": 9,
+      "bold": true
+    },
+    "header": {
+      "size_pt": 8,
+      "bold": false
+    },
+    "footer": {
+      "size_pt": 8,
+      "bold": false
+    }
+  }
+}

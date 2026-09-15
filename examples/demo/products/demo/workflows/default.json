@@ -1,0 +1,441 @@
+{
+  "id": "default",
+  "artifacts": [
+    {
+      "id": "scope-001",
+      "kind": "scope",
+      "stage": "intake",
+      "path": "scope/scope-001.md",
+      "title": "작업 범위"
+    },
+    {
+      "id": "inventory-001",
+      "kind": "inventory",
+      "stage": "research_inventory",
+      "path": "research/inventory/inventory-001.md",
+      "title": "조사 대상 목록"
+    },
+    {
+      "id": "architecture-001",
+      "kind": "architecture",
+      "stage": "research_architecture",
+      "path": "research/architecture/architecture-001.md",
+      "title": "구조와 데이터 흐름"
+    },
+    {
+      "id": "page-001",
+      "kind": "page",
+      "stage": "research_behavior",
+      "path": "research/behavior/pages/page-001.md",
+      "title": "성능 요약 화면 조사"
+    },
+    {
+      "id": "api-001",
+      "kind": "api",
+      "stage": "research_data",
+      "path": "research/data/apis/api-001.md",
+      "title": "성능 조회 API 조사"
+    },
+    {
+      "id": "metric-001",
+      "kind": "metric",
+      "stage": "research_data",
+      "path": "research/data/metrics/metric-001.md",
+      "title": "Availability 지표 조사"
+    },
+    {
+      "id": "table-001",
+      "kind": "table",
+      "stage": "research_data",
+      "path": "research/data/tables/table-001.md",
+      "title": "설비 상태 이력 조사"
+    },
+    {
+      "id": "reconcile-001",
+      "kind": "reconcile",
+      "stage": "research_reconcile",
+      "path": "research/reconcile/reconcile-001.md",
+      "title": "근거 불일치 정리"
+    },
+    {
+      "id": "outline-001",
+      "kind": "outline",
+      "stage": "outline",
+      "path": "outlines/outline-001.md",
+      "title": "문서별 목차와 분담"
+    },
+    {
+      "id": "fact-check-001",
+      "kind": "fact_check",
+      "stage": "fact_check",
+      "path": "reviews/facts/fact-check-001.md",
+      "title": "사실 검증"
+    },
+    {
+      "id": "review-001",
+      "kind": "review",
+      "stage": "review",
+      "path": "reviews/independent/review-001.md",
+      "title": "독립 문서 리뷰"
+    },
+    {
+      "id": "style-check-001",
+      "kind": "style_check",
+      "stage": "style_check",
+      "path": "reviews/style/style-check-001.md",
+      "title": "회사 서식 검증"
+    },
+    {
+      "id": "publish-001",
+      "kind": "publish",
+      "stage": "publish",
+      "path": "delivery/publish-001.md",
+      "title": "최종 전달 기록"
+    },
+    {
+      "id": "api-spec-index",
+      "kind": "document_index",
+      "stage": "draft",
+      "path": "documents/api_spec/INDEX.md",
+      "title": "API 명세서",
+      "document_type": "api_spec"
+    },
+    {
+      "id": "api-spec-overview",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/api_spec/sections/overview.md",
+      "title": "overview",
+      "document_type": "api_spec",
+      "section_id": "overview"
+    },
+    {
+      "id": "api-spec-catalog",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/api_spec/sections/catalog.md",
+      "title": "catalog",
+      "document_type": "api_spec",
+      "section_id": "catalog"
+    },
+    {
+      "id": "api-spec-common",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/api_spec/sections/common.md",
+      "title": "common",
+      "document_type": "api_spec",
+      "section_id": "common"
+    },
+    {
+      "id": "api-spec-request",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/api_spec/sections/request.md",
+      "title": "request",
+      "document_type": "api_spec",
+      "section_id": "request"
+    },
+    {
+      "id": "api-spec-response",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/api_spec/sections/response.md",
+      "title": "response",
+      "document_type": "api_spec",
+      "section_id": "response"
+    },
+    {
+      "id": "api-spec-errors",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/api_spec/sections/errors.md",
+      "title": "errors",
+      "document_type": "api_spec",
+      "section_id": "errors"
+    },
+    {
+      "id": "api-spec-references",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/api_spec/sections/references.md",
+      "title": "references",
+      "document_type": "api_spec",
+      "section_id": "references"
+    },
+    {
+      "id": "functional-spec-index",
+      "kind": "document_index",
+      "stage": "draft",
+      "path": "documents/functional_spec/INDEX.md",
+      "title": "기능 명세서",
+      "document_type": "functional_spec"
+    },
+    {
+      "id": "functional-spec-overview",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/functional_spec/sections/overview.md",
+      "title": "overview",
+      "document_type": "functional_spec",
+      "section_id": "overview"
+    },
+    {
+      "id": "functional-spec-features",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/functional_spec/sections/features.md",
+      "title": "features",
+      "document_type": "functional_spec",
+      "section_id": "features"
+    },
+    {
+      "id": "functional-spec-rules",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/functional_spec/sections/rules.md",
+      "title": "rules",
+      "document_type": "functional_spec",
+      "section_id": "rules"
+    },
+    {
+      "id": "functional-spec-behavior",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/functional_spec/sections/behavior.md",
+      "title": "behavior",
+      "document_type": "functional_spec",
+      "section_id": "behavior"
+    },
+    {
+      "id": "functional-spec-acceptance",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/functional_spec/sections/acceptance.md",
+      "title": "acceptance",
+      "document_type": "functional_spec",
+      "section_id": "acceptance"
+    },
+    {
+      "id": "functional-spec-references",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/functional_spec/sections/references.md",
+      "title": "references",
+      "document_type": "functional_spec",
+      "section_id": "references"
+    },
+    {
+      "id": "metric-spec-index",
+      "kind": "document_index",
+      "stage": "draft",
+      "path": "documents/metric_spec/INDEX.md",
+      "title": "지표 계산식 명세서",
+      "document_type": "metric_spec"
+    },
+    {
+      "id": "metric-spec-overview",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/metric_spec/sections/overview.md",
+      "title": "overview",
+      "document_type": "metric_spec",
+      "section_id": "overview"
+    },
+    {
+      "id": "metric-spec-catalog",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/metric_spec/sections/catalog.md",
+      "title": "catalog",
+      "document_type": "metric_spec",
+      "section_id": "catalog"
+    },
+    {
+      "id": "metric-spec-definition",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/metric_spec/sections/definition.md",
+      "title": "definition",
+      "document_type": "metric_spec",
+      "section_id": "definition"
+    },
+    {
+      "id": "metric-spec-formula",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/metric_spec/sections/formula.md",
+      "title": "formula",
+      "document_type": "metric_spec",
+      "section_id": "formula"
+    },
+    {
+      "id": "metric-spec-data-mapping",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/metric_spec/sections/data-mapping.md",
+      "title": "data_mapping",
+      "document_type": "metric_spec",
+      "section_id": "data_mapping"
+    },
+    {
+      "id": "metric-spec-examples",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/metric_spec/sections/examples.md",
+      "title": "examples",
+      "document_type": "metric_spec",
+      "section_id": "examples"
+    },
+    {
+      "id": "metric-spec-references",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/metric_spec/sections/references.md",
+      "title": "references",
+      "document_type": "metric_spec",
+      "section_id": "references"
+    },
+    {
+      "id": "table-spec-index",
+      "kind": "document_index",
+      "stage": "draft",
+      "path": "documents/table_spec/INDEX.md",
+      "title": "테이블 명세서",
+      "document_type": "table_spec"
+    },
+    {
+      "id": "table-spec-overview",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/table_spec/sections/overview.md",
+      "title": "overview",
+      "document_type": "table_spec",
+      "section_id": "overview"
+    },
+    {
+      "id": "table-spec-catalog",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/table_spec/sections/catalog.md",
+      "title": "catalog",
+      "document_type": "table_spec",
+      "section_id": "catalog"
+    },
+    {
+      "id": "table-spec-columns",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/table_spec/sections/columns.md",
+      "title": "columns",
+      "document_type": "table_spec",
+      "section_id": "columns"
+    },
+    {
+      "id": "table-spec-constraints",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/table_spec/sections/constraints.md",
+      "title": "constraints",
+      "document_type": "table_spec",
+      "section_id": "constraints"
+    },
+    {
+      "id": "table-spec-examples",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/table_spec/sections/examples.md",
+      "title": "examples",
+      "document_type": "table_spec",
+      "section_id": "examples"
+    },
+    {
+      "id": "table-spec-references",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/table_spec/sections/references.md",
+      "title": "references",
+      "document_type": "table_spec",
+      "section_id": "references"
+    },
+    {
+      "id": "user-manual-index",
+      "kind": "document_index",
+      "stage": "draft",
+      "path": "documents/user_manual/INDEX.md",
+      "title": "사용자 매뉴얼",
+      "document_type": "user_manual"
+    },
+    {
+      "id": "user-manual-overview",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/user_manual/sections/overview.md",
+      "title": "overview",
+      "document_type": "user_manual",
+      "section_id": "overview"
+    },
+    {
+      "id": "user-manual-environment",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/user_manual/sections/environment.md",
+      "title": "environment",
+      "document_type": "user_manual",
+      "section_id": "environment"
+    },
+    {
+      "id": "user-manual-features",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/user_manual/sections/features.md",
+      "title": "features",
+      "document_type": "user_manual",
+      "section_id": "features"
+    },
+    {
+      "id": "user-manual-usage",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/user_manual/sections/usage.md",
+      "title": "usage",
+      "document_type": "user_manual",
+      "section_id": "usage"
+    },
+    {
+      "id": "user-manual-troubleshooting",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/user_manual/sections/troubleshooting.md",
+      "title": "troubleshooting",
+      "document_type": "user_manual",
+      "section_id": "troubleshooting"
+    },
+    {
+      "id": "user-manual-references",
+      "kind": "document_section",
+      "stage": "draft",
+      "path": "documents/user_manual/sections/references.md",
+      "title": "references",
+      "document_type": "user_manual",
+      "section_id": "references"
+    }
+  ],
+  "document_teams": {
+    "user_manual": {
+      "writer": "user-manual-writer"
+    },
+    "functional_spec": {
+      "writer": "functional-spec-writer"
+    },
+    "api_spec": {
+      "writer": "api-spec-writer"
+    },
+    "metric_spec": {
+      "writer": "metric-spec-writer"
+    },
+    "table_spec": {
+      "writer": "table-spec-writer"
+    }
+  }
+}

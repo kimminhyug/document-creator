@@ -1,0 +1,8 @@
+{
+  "product": "demo", "environment": "local",
+  "base_url": "http://127.0.0.1:8765/",
+  "allowed_origins": ["http://127.0.0.1:8765"],
+  "capture_profile": "desktop",
+  "capture": "capture/pages.json",
+  "database": "database/readonly.json"
+}

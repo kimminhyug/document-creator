@@ -1,0 +1,16 @@
+{
+  "id": "senior-team",
+  "members": {
+    "lead": "document-lead",
+    "research_lead": "research-lead",
+    "architect": "architecture-researcher",
+    "ui_researcher": "ui-researcher",
+    "data_researcher": "data-researcher",
+    "writer": "document-writer",
+    "fact_checker": "fact-checker",
+    "reviewer": "independent-reviewer",
+    "style_qa": "style-qa"
+  },
+  "execution": "command_adapter",
+  "note": "ai_runner.py에서 역할/에이전트별 명령을 실행한다. 기본 비활성. 공급자와 인증 환경은 운영자가 설정한다."
+}
