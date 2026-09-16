@@ -18,6 +18,7 @@
 | md_build.py | 여러 MD를 임시 출력 모델로 조합 |
 | company_build.py | 회사 승인 테마·제품 문구 선택 |
 | creator.py / output_adapters.py | Word/PDF/HTML/Excel 출력 |
+| docx_layout.py | DOCX 표지 줄바꿈·표 열 너비·짧은 절 높이 추정 |
 
 ## 변경과 검수
 

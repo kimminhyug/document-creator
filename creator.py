@@ -41,6 +41,10 @@ def validate(content, contract, project, theme, release=False):
     require(content["type"] == contract["id"], "document.type does not match template")
     for key in ("name", "organization", "contact", "classification"):
         require(text(project.get(key)), f"project.{key}: required")
+    language = project.get("language", "ko-KR")
+    require(isinstance(language, str) and re.fullmatch(r"[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*", language), "project.language: language tag required")
+    latin = project.get("latin_language", "en-US")
+    require(isinstance(latin, str) and re.fullmatch(r"[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*", latin), "project.latin_language: language tag required")
     require(isinstance(content.get("sources"), list) and content["sources"], "sources required")
     source_ids = set()
     for source in content["sources"]:
@@ -156,6 +160,7 @@ def validate_theme(t):
         value = ts.get(key, default)
         require(type(value) in (int, float) and 0 <= value <= 24, f"invalid table.{key}")
     require(ts.get("column_width_mode", "content") in ("content", "equal"), "invalid table.column_width_mode")
+    require(type(ts.get("keep_rows_together", True)) is bool, "table.keep_rows_together must be boolean")
     require(type(layout.get("keep_title_words", True)) is bool, "layout.keep_title_words must be boolean")
 
 
@@ -174,6 +179,7 @@ def section_blocks(section):
 
 
 def render_docx(path, content, project, theme):
+    from docx_layout import column_widths, short_text_section, title_lines, wrap_words
     from inline_links import add_docx_links
     from docx.text.run import Run
     from docx import Document
@@ -189,6 +195,7 @@ def render_docx(path, content, project, theme):
     sec.top_margin = sec.bottom_margin = sec.left_margin = sec.right_margin = Mm(theme["margin_mm"])
     sec.header_distance = sec.footer_distance = Mm(10)
     sec.different_first_page_header_footer = True
+    usable_pt = (sec.page_width - sec.left_margin - sec.right_margin) / 12700
     for name, size in (("Normal", theme["body_pt"]), ("Title", theme["title_pt"]), ("Heading 1", theme["heading_pt"]), ("Heading 2", theme["body_pt"] + 2), ("Heading 3", theme["body_pt"] + 1), ("Heading 4", theme["body_pt"]), ("Header", 9), ("Footer", 9)):
         style = d.styles[name]
         key = {"Normal": "body", "Title": "title", "Header": "header", "Footer": "footer"}.get(name, name.lower().replace(" ", "_"))
@@ -196,6 +203,20 @@ def render_docx(path, content, project, theme):
         style.font.name = token["font_family"]
         style.font.bold = token["bold"]
         style._element.get_or_add_rPr().rFonts.set(qn("w:eastAsia"), token["font_family"])
+        fonts = style._element.get_or_add_rPr().rFonts
+        # Theme attributes take precedence over the explicit company font.
+        # python-docx's default Title/Heading styles retain these attributes.
+        for attribute in ("asciiTheme", "hAnsiTheme", "eastAsiaTheme", "cstheme", "csTheme"):
+            fonts.attrib.pop(qn("w:" + attribute), None)
+        fonts.set(qn("w:cs"), token["font_family"])
+        language = style._element.rPr.find(qn("w:lang"))
+        if language is None:
+            language = OxmlElement("w:lang")
+            style._element.rPr.append(language)
+        for slot in ("val", "eastAsia", "bidi"):
+            language.set(qn("w:" + slot), project.get("language", "ko-KR"))
+        if project.get("language", "ko-KR").split('-')[0].lower() in ('ko', 'ja', 'zh'):
+            language.set(qn("w:val"), project.get("latin_language", "en-US"))
         style.font.size = Pt(token["size_pt"])
         style.font.color.rgb = RGBColor.from_string("000000" if name != "Normal" else theme["colors"]["text"][1:])
         style.paragraph_format.line_spacing = theme["line_spacing"]
@@ -203,6 +224,9 @@ def render_docx(path, content, project, theme):
         style.paragraph_format.space_after = Pt(token["space_after_pt"])
         if name.startswith("Heading"):
             style.paragraph_format.keep_with_next = True
+        if name == "Title" and style._element.pPr is not None:
+            for border in list(style._element.pPr.findall(qn("w:pBdr"))):
+                style._element.pPr.remove(border)
     hp = sec.header.paragraphs[0]
     hp.text = interpolate(theme["header"]["left"], content, project) + "  |  " + interpolate(theme["header"]["right"], content, project)
     fp = sec.footer.paragraphs[0]
@@ -216,10 +240,14 @@ def render_docx(path, content, project, theme):
         fp._p.append(field)
     d.core_properties.title = content["title"]
     d.core_properties.author = project["organization"]
+    d.core_properties.language = project.get("language", "ko-KR")
     d.core_properties.comments = ""
     if theme.get("cover", {}).get("enabled", True):
         d.add_paragraph(project["organization"])
-        d.add_paragraph(interpolate(theme.get("cover", {}).get("title", "{title}"), content, project), "Title")
+        cover_title = interpolate(theme.get("cover", {}).get("title", "{title}"), content, project)
+        if theme.get("layout", {}).get("keep_title_words", True):
+            cover_title = title_lines(cover_title, style_token(theme, 'title')['size_pt'], usable_pt)
+        d.add_paragraph(cover_title, "Title")
         d.add_paragraph(content["summary"])
         d.add_paragraph(f"{version_text(content, theme)}\n{project['name']}\n{project['classification']}")
         if content.get("example"):
@@ -235,8 +263,10 @@ def render_docx(path, content, project, theme):
             d.add_paragraph(f"{n}. {section['title']}")
         d.add_page_break()
     for n, section in enumerate(content["sections"], 1):
+        section_start = len(d.paragraphs)
+        blocks = list(section_blocks(section))
         d.add_heading(f"{n} {section['title']}", 1)
-        for block in section_blocks(section):
+        for block in blocks:
             kind = block["type"]
             if kind == "heading":
                 d.add_heading(block["text"], block["level"])
@@ -253,21 +283,30 @@ def render_docx(path, content, project, theme):
             elif kind == "table":
                 table = d.add_table(rows=1, cols=len(block["headers"]))
                 table.autofit = False
-                width = (sec.page_width - sec.left_margin - sec.right_margin) / len(block["headers"])
-                for col in table.columns:
-                    col.width = int(width)
+                widths = column_widths(block, theme, usable_pt)
+                for col, width in zip(table.columns, widths):
+                    col.width = Pt(width)
                 for idx, value in enumerate(block["headers"]):
+                    value = wrap_words(value, style_token(theme, 'table_header')['size_pt'], widths[idx] - 2 * table_tokens.get('padding_x_pt', 7))
                     add_docx_links(table.rows[0].cells[idx].paragraphs[0], value, content.get('web_links', []))
                 repeat = OxmlElement("w:tblHeader")
                 table.rows[0]._tr.get_or_add_trPr().append(repeat)
                 for row in block["rows"]:
                     cells = table.add_row().cells
                     for idx, value in enumerate(row):
+                        value = wrap_words(value, style_token(theme, 'table_body')['size_pt'], widths[idx] - 2 * table_tokens.get('padding_x_pt', 7))
                         add_docx_links(cells[idx].paragraphs[0], value, content.get('web_links', []))
                 for ri, row in enumerate(table.rows):
-                    # Allow long rows to continue to the next page; repeat column labels.
-                    for cell in row.cells:
+                    # Keep a row on one page if it fits. OOXML cantSplit still
+                    # permits a row taller than a page to flow across pages.
+                    if table_tokens.get("keep_rows_together", True):
+                        row._tr.get_or_add_trPr().append(OxmlElement("w:cantSplit"))
+                    for ci, cell in enumerate(row.cells):
+                        cell.width = Pt(widths[ci])
                         for p in cell.paragraphs:
+                            wrap = OxmlElement("w:wordWrap")
+                            wrap.set(qn("w:val"), "0")
+                            p._p.get_or_add_pPr().append(wrap)
                             p.paragraph_format.space_after = Pt(5)
                             for element in p._p.iter(qn('w:r')):
                                 run = Run(element, p)
@@ -299,6 +338,8 @@ def render_docx(path, content, project, theme):
                 d.add_paragraph()
             else:
                 value = block["text"]
+                if kind != 'code':
+                    value = wrap_words(value, style_token(theme, 'body')['size_pt'], usable_pt)
                 if kind == "note":
                     note = theme["notes"][block["role"]]
                     p = d.add_paragraph()
@@ -316,8 +357,13 @@ def render_docx(path, content, project, theme):
                     props.append(border)
                 else:
                     p = d.add_paragraph()
-                    if kind == 'code':p.add_run(value)
+                    if kind == 'code':
+                        p.add_run(value)
+                        p.paragraph_format.keep_together = True
                     else:add_docx_links(p, value, content.get('web_links', []))
+        if short_text_section(blocks, theme, usable_pt):
+            for paragraph in d.paragraphs[section_start:-1]:
+                paragraph.paragraph_format.keep_with_next = True
     if public_references(content):
         d.add_heading("참고 자료", 1)
         for source in public_references(content):

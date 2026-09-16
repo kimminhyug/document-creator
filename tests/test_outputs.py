@@ -8,6 +8,90 @@ import creator
 from output_adapters import render_html, render_xlsx
 
 class OutputTests(unittest.TestCase):
+    def test_docx_company_fonts_override_template_themes(self):
+        from docx.oxml.ns import qn
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'fonts.docx'
+            creator.render_docx(path,self.content,self.project,self.theme)
+            doc=Document(path)
+            for name in ('Normal','Title','Heading 1','Heading 2','Heading 3','Heading 4','Header','Footer'):
+                fonts=doc.styles[name]._element.rPr.rFonts
+                for slot in ('ascii','hAnsi','eastAsia','cs'):
+                    self.assertEqual(fonts.get(qn('w:'+slot)),self.theme['font_family'])
+                self.assertFalse(any(key.lower().endswith('theme') for key in fonts.attrib))
+
+    def test_docx_table_pagination_and_width_policy(self):
+        from docx.oxml.ns import qn
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'tables.docx'
+            for keep,mode in ((True,'content'),(False,'equal')):
+                self.theme['table']={'keep_rows_together':keep,'column_width_mode':mode}
+                creator.render_docx(path,self.content,self.project,self.theme)
+                for table in Document(path).tables:
+                    self.assertFalse(table.autofit)
+                    for row in table.rows:
+                        for column,cell in zip(table.columns,row.cells):
+                            self.assertAlmostEqual(column.width.pt,cell.width.pt,places=1)
+                    self.assertIsNotNone(table.rows[0]._tr.trPr.find(qn('w:tblHeader')))
+                    for row in table.rows:
+                        self.assertEqual(row._tr.trPr is not None and row._tr.trPr.find(qn('w:cantSplit')) is not None,keep)
+            self.theme['table']['keep_rows_together']=1
+            with self.assertRaises(ValueError):creator.validate_theme(self.theme)
+
+    def test_docx_title_words_and_short_sections_preserve_text(self):
+        from docx.oxml.ns import qn
+        self.content['title']='설비 모니터링 테스트 제품 기능 명세서'
+        self.content['sections']=[{'title':'확인 범위','status':'confirmed','blocks':[
+            {'type':'paragraph','text':'첫 번째 짧은 문단.'},
+            {'type':'paragraph','text':'두 번째 짧은 문단.'}]}]
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'title.docx';creator.render_docx(path,self.content,self.project,self.theme)
+            doc=Document(path);title=next(p for p in doc.paragraphs if p.style.name=='Title')
+            self.assertEqual(title.text.split(),self.content['title'].split())
+            self.assertIn('명세서',title.text.split('\n')[-1])
+            self.assertIsNone(doc.styles['Title']._element.pPr.find(qn('w:pBdr')))
+            first=next(p for p in doc.paragraphs if p.text=='첫 번째 짧은 문단.')
+            self.assertTrue(first.paragraph_format.keep_with_next)
+            last=next(p for p in doc.paragraphs if p.text=='두 번째 짧은 문단.')
+            self.assertIsNot(last.paragraph_format.keep_with_next,True)
+
+    def test_docx_mixed_section_does_not_chain_all_paragraphs(self):
+        self.content['sections'][0]['blocks'].insert(0, {'type':'paragraph','text':'표 앞의 독립 문단'})
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'mixed.docx'
+            creator.render_docx(path,self.content,self.project,self.theme)
+            paragraph=next(p for p in Document(path).paragraphs if p.text=='표 앞의 독립 문단')
+            self.assertIsNot(paragraph.paragraph_format.keep_with_next,True)
+
+    def test_docx_language_is_explicit_and_configurable(self):
+        from docx.oxml.ns import qn
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'language.docx'
+            for language in ('ko-KR','en-US','zh-Hant'):
+                if language!='ko-KR':self.project['language']=language
+                creator.render_docx(path,self.content,self.project,self.theme)
+                doc=Document(path)
+                self.assertEqual(doc.core_properties.language,language)
+                for name in ('Normal','Title','Heading 1','Heading 2','Header','Footer'):
+                    element=doc.styles[name]._element.rPr.find(qn('w:lang'))
+                    self.assertEqual(element.get(qn('w:eastAsia')),language)
+                    self.assertEqual(element.get(qn('w:val')),'en-US' if language.startswith(('ko','zh')) else language)
+            self.project['language']='not a language'
+            with self.assertRaisesRegex(ValueError,'project.language'):
+                creator.validate(self.content,{'id':self.content['type']},self.project,self.theme)
+
+    def test_docx_word_layout_preserves_tokens_and_description_space(self):
+        from docx_layout import wrap_words,column_widths
+        value='조회 기간은 최대 31일입니다. 검색어는 최대 100자입니다. 00:00~11:00으로 조회합니다.'
+        wrapped=wrap_words(value,10.5,100)
+        self.assertEqual(wrapped.split(),value.split())
+        for token in ('31일입니다.','100자입니다.','00:00~11:00으로'):
+            self.assertIn(token,wrapped)
+        block={'headers':['객체','사용 항목','용도'],'rows':[['documentation.equipment_state_history','equipment_id,state,start_at,end_at','기준 기간의 로컬 테스트 정답표']]}
+        widths=column_widths(block,self.theme,470)
+        self.assertAlmostEqual(sum(widths),470)
+        self.assertGreaterEqual(widths[2],72)
+
     def test_public_web_address_is_clickable_without_losing_printed_text(self):
         address='https://example.test/path?a=1&b=2'
         self.content['web_links']=[address]

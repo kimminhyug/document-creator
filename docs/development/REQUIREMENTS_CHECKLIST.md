@@ -8,7 +8,8 @@
 | 읽는 문서에 관리 번호 제외 | md_contract.py, 출력 어댑터 | 내부 ID·출처 경로 비출력 테스트 |
 | 회사/제품/환경 분리 | config/catalog.json, config/, examples/demo/ | demo 명시 연결, 경로 범위 검사 |
 | 표·폰트·제목·공용 양식 | 회사 theme.json | 역할별 스타일·표지·저작권·목차·머릿글·바닥글·마지막 페이지 |
-| Word/Excel/HTML 출력 | creator.py, output_adapters.py | 4형식 생성, PDF/HTML 시각 검수 |
+| Word/Excel/HTML 출력 | creator.py, output_adapters.py, docx_layout.py | 4형식 생성, PDF/HTML 및 DOCX LibreOffice 92쪽 시각 검수; Microsoft Word/Excel 앱 별도 |
+| 공통 조사 명령 | document.py research | plan/run/status/resume, 명시 실행·수집·조회 게이트, 독립 CLI QA 23건 |
 | Python 3.12 | .python-version, doctor.py | 실제 3.12 실행 |
 | 병렬 캡처·페이지 분배 | collect.py | 실제 다중 프로세스 테스트 |
 | 테마·언어·해상도별 캡처 | profile와 페이지 설정 | 실제 dark/en-US/640×480 및 경로 검증 |
